@@ -1,24 +1,11 @@
 import asyncio
 import curses
+import random
 import time
 
 TIC_TIMEOUT = 0.1
 
 
-# def get_stars(canvas):
-#     row, column = (3, 10)
-#     while True:
-#         canvas.addstr(row, column, "*", curses.A_DIM)
-#         canvas.refresh()
-#         time.sleep(2)
-#         canvas.addstr(row, column, "*")
-#         canvas.refresh()
-#         time.sleep(0.3)
-#         canvas.addstr(row, column, "*", curses.A_BOLD)
-#         canvas.refresh()
-#         time.sleep(0.5)
-#         canvas.addstr(row, column, "*")
-#         canvas.refresh()
 class EventLoopCommand:
     def __await__(self):
         return (yield self)
@@ -31,8 +18,9 @@ class Sleep(EventLoopCommand):
 
 async def blink(canvas, row, column, symbol="*"):
     while True:
+        star_flash = random.randint(0, 50)
         canvas.addstr(row, column, symbol, curses.A_DIM)
-        for _ in range(20):
+        for _ in range(star_flash):
             await Sleep(TIC_TIMEOUT)
 
         canvas.addstr(row, column, symbol)
@@ -49,26 +37,26 @@ async def blink(canvas, row, column, symbol="*"):
 
 
 def draw(canvas):
-    row, column = (5, 20)
     curses.curs_set(False)
     canvas.border()
-    # canvas.addstr(row, column, "PRESS START", curses.A_BOLD | curses.A_REVERSE)
     canvas.refresh()
+    max_hight, max_width = canvas.getmaxyx()
+    # Генерируем звезды
     stars = [
-        blink(canvas, row, column + number_column * 2) for number_column in range(5)
+        blink(
+            canvas, random.randint(1, max_hight - 2), random.randint(1, max_width - 2)
+        )
+        for _ in range(200)
     ]
-    coroutines = stars
     while True:
         try:
-            for coroutine in coroutines.copy():
+            for coroutine in stars:
                 sleep_command = coroutine.send(None)
                 seconds_to_sleep = sleep_command.seconds
                 canvas.refresh()
             time.sleep(seconds_to_sleep)
         except StopIteration:
-            coroutines.remove(coroutine)
-        if len(coroutines) == 0:
-            break
+            stars.remove(coroutine)
 
 
 if __name__ == "__main__":
