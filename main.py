@@ -2,6 +2,8 @@ import asyncio
 import curses
 import time
 
+TIC_TIMEOUT = 0.1
+
 
 # def get_stars(canvas):
 #     row, column = (3, 10)
@@ -27,19 +29,23 @@ class Sleep(EventLoopCommand):
         self.seconds = seconds
 
 
-async def blink(canvas, row, column, symbol="*", amount_of_ticks=5):
+async def blink(canvas, row, column, symbol="*"):
     while True:
         canvas.addstr(row, column, symbol, curses.A_DIM)
-        await asyncio.sleep(0)
+        for _ in range(20):
+            await Sleep(TIC_TIMEOUT)
 
         canvas.addstr(row, column, symbol)
-        await asyncio.sleep(0)
+        for _ in range(3):
+            await Sleep(TIC_TIMEOUT)
 
         canvas.addstr(row, column, symbol, curses.A_BOLD)
-        await asyncio.sleep(0)
+        for _ in range(5):
+            await Sleep(TIC_TIMEOUT)
 
         canvas.addstr(row, column, symbol)
-        await asyncio.sleep(0)
+        for _ in range(3):
+            await Sleep(TIC_TIMEOUT)
 
 
 def draw(canvas):
@@ -53,18 +59,16 @@ def draw(canvas):
     ]
     coroutines = stars
     while True:
-        for coroutine in coroutines.copy():
-            try:
+        try:
+            for coroutine in coroutines.copy():
                 sleep_command = coroutine.send(None)
                 seconds_to_sleep = sleep_command.seconds
-                time.sleep(seconds_to_sleep)
                 canvas.refresh()
-
-            except StopIteration:
-                coroutines.remove(coroutine)
+            time.sleep(seconds_to_sleep)
+        except StopIteration:
+            coroutines.remove(coroutine)
         if len(coroutines) == 0:
             break
-        time.sleep(1)
 
 
 if __name__ == "__main__":
